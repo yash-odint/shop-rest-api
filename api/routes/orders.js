@@ -35,12 +35,12 @@ router.post("/", (req, res, next)=>{
     //validating product
     Product.findById(req.body.productId)
         .exec()
-        
         .then((prod) => {
             if(!prod){
-                return res.status(500).json({
+                res.status(500).json({
                     message: "Product not found"
                 });
+                return prod;
             }
             const order = new Order({
                 _id: new mongoose.Types.ObjectId(),
@@ -51,6 +51,9 @@ router.post("/", (req, res, next)=>{
         })
 
         .then((result)=>{
+            if(!result){
+                return;
+            }
             res.status(201).json({
                 message: "order stored successfully",
                 createdOrder: result,
