@@ -8,6 +8,7 @@ const Product = require("../models/product");
 //handling "/orders" routes
 router.get("/", (req, res, next)=>{
     Order.find().select("_id quantity product")
+        .populate("product", "_id name price")
         .exec()
         .then((docs) => {
             res.status(201).json({
@@ -26,7 +27,7 @@ router.get("/", (req, res, next)=>{
             });
         })
         .catch((err) => {
-            res.status.json({
+            res.status(500).json({
                 error: err
             });
         });
@@ -74,15 +75,36 @@ router.post("/", (req, res, next)=>{
 // handling "/orders/{id}" routes
 router.get("/:orderId", (req, res, next)=>{
     const id = req.params.orderId;
-    res.status(200).json({
-        message: "handling GET request to /orders/{id}",
-        orderId: id
-    });
+    Order.findById(id)
+        .then((result) => {
+            if(!result){
+                return res.status(201).json({
+                    message: "Order not found"
+                });
+            }
+            const response = {
+                _id: result._id,
+                product: result.product,
+                quantity: result.quantity
+            }
+            res.status(201).json(response);
+        })
+        .catch((err) => {
+            res.status(500).json({
+                error: err
+            });
+        });
 });
 router.delete("/:orderId", (req, res, next)=>{
-    res.status(200).json({
-        message: "order deleted"
-    });
+    id = req.params.orderId;
+    Order.deleteOne({_id: id})
+        .exec()
+        .then((result) => {
+            res.status(200).json({
+                message: "order deleted!"
+            });
+        })
+        .catch();
 });
 
 module.exports = router;
