@@ -1,12 +1,37 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require("mongoose");
+const multer = require("multer");
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, "./uploads/");
+    },
+    filename: (req, file, cb) => {
+        const fileName = new Date().toISOString() + file.originalname;
+        cb(null, fileName);
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    fileFilter: (req, file, cb)=>{
+        if(file.mimetype !== "image/jpeg"){
+            cb(null, false);
+        } else{
+            cb(null, true);
+        }
+    },
+    limits: {
+        fileSize: 1 * 1024 * 1024
+    }
+});
 
 const Product = require("../models/product");
 //all routes will be placed after "/products"
 //handling "/products/"
 router.get("/", (req, res, next) => {
-    Product.find().select("price name _id")
+    Product.find().select("price name _id productImage")
     .exec()
     .then((docs) => {
         const response = {
@@ -16,6 +41,7 @@ router.get("/", (req, res, next) => {
                     _id: doc._id,
                     name: doc.name,
                     price: doc.price,
+                    productImage: doc.productImage,
                     request: {
                         type: "GET",
                         url: "http://localhost:9999/products/"+doc._id
@@ -31,11 +57,14 @@ router.get("/", (req, res, next) => {
         });
     });
 });
-router.post("/", (req, res, next) => {
+
+router.post("/", upload.single("productImage"), (req, res, next) => {
+    console.log(req.file);
     const product = new Product({
         _id: new mongoose.Types.ObjectId(),
         name: req.body.name,
-        price: req.body.price
+        price: req.body.price,
+        productImage: req.file.path
     });
     product
         .save()
@@ -62,7 +91,7 @@ router.post("/", (req, res, next) => {
 //handling "/products/{id}"
 router.get("/:productId", (req, res, next)=>{
     const id = req.params.productId;
-    Product.findById(id).select("price _id name")
+    Product.findById(id).select("price _id name productImage")
         .exec()
         .then((doc)=>{
             if(doc){

@@ -17,11 +17,10 @@ app.use(morgan('dev'));
 
 app.use(bodyparser.urlencoded({extended: false}));
 app.use(bodyparser.json());
-
+app.use("/uploads", express.static("uploads"));
 //routes handle
 app.use("/products", productRoutes);
 app.use("/orders", orderRoutes);
-
 //error catch
 app.use((req, res, next) => {
     const error = Error("Not found");
