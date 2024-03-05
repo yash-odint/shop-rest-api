@@ -3,10 +3,11 @@ const router = express.Router();
 const mongoose = require("mongoose");
 const Order = require("../models/order");
 const Product = require("../models/product");
+const check_auth = require("../middleware/check-auth");
 
 //all routes will be placed after "/orders"
 //handling "/orders" routes
-router.get("/", (req, res, next)=>{
+router.get("/", check_auth, (req, res, next)=>{
     Order.find().select("_id quantity product")
         .populate("product", "_id name price")
         .exec()
@@ -32,7 +33,7 @@ router.get("/", (req, res, next)=>{
             });
         });
 });
-router.post("/", (req, res, next)=>{
+router.post("/", check_auth, (req, res, next)=>{
     //validating product
     Product.findById(req.body.productId)
         .exec()
@@ -73,7 +74,7 @@ router.post("/", (req, res, next)=>{
 });
 
 // handling "/orders/{id}" routes
-router.get("/:orderId", (req, res, next)=>{
+router.get("/:orderId", check_auth, (req, res, next)=>{
     const id = req.params.orderId;
     Order.findById(id)
         .then((result) => {
@@ -95,7 +96,7 @@ router.get("/:orderId", (req, res, next)=>{
             });
         });
 });
-router.delete("/:orderId", (req, res, next)=>{
+router.delete("/:orderId", check_auth, (req, res, next)=>{
     id = req.params.orderId;
     Order.deleteOne({_id: id})
         .exec()
