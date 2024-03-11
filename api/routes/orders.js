@@ -5,14 +5,28 @@ const Order = require("../models/order");
 const Product = require("../models/product");
 const check_auth = require("../middleware/check-auth");
 
+const redis = require("redis");
+const redisClient = redis.createClient(6379);
+redisClient.connect().then();
+function orderCacher(req, res, next){
+    redisClient.get("cachedOrder").then((data)=>{
+        if(data === null){
+            next();
+        } else{
+            res.json(JSON.parse(data));
+            console.log("cached");
+        }
+    });
+}
+
 //all routes will be placed after "/orders"
 //handling "/orders" routes
-router.get("/", check_auth, (req, res, next)=>{
+router.get("/", check_auth, orderCacher,(req, res, next)=>{
     Order.find().select("_id quantity product")
         .populate("product", "_id name price")
         .exec()
         .then((docs) => {
-            res.status(201).json({
+            const data = {
                 count: docs.length,
                 orders: docs.map((doc) => {
                     return {
@@ -25,7 +39,9 @@ router.get("/", check_auth, (req, res, next)=>{
                         }
                     }
                 })
-            });
+            }
+        redisClient.set("cachedOrder", JSON.stringify(data), {EX: 15});
+        res.status(201).json(data);
         })
         .catch((err) => {
             res.status(500).json({

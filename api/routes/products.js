@@ -2,6 +2,19 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require("mongoose");
 const multer = require("multer");
+//redis
+const redis = require("redis");
+const redisClient = redis.createClient(6379);
+redisClient.connect().then();
+function productCacher(req, res, next){
+    redisClient.get("cachedProduct").then((data)=>{
+        if(data === null){
+            next();
+        } else{
+            res.json(JSON.parse(data));
+        }
+    });
+}
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -30,7 +43,10 @@ const upload = multer({
 const Product = require("../models/product");
 //all routes will be placed after "/products"
 //handling "/products/"
-router.get("/", (req, res, next) => {
+
+
+
+router.get("/", productCacher, (req, res, next) => {
     Product.find().select("price name _id productImage")
     .exec()
     .then((docs) => {
@@ -49,6 +65,7 @@ router.get("/", (req, res, next) => {
                 }
             })
         }
+        redisClient.set("cachedProduct", JSON.stringify(response), {EX: 15});
         res.status(200).json(response);
     })
     .catch((err) => {
